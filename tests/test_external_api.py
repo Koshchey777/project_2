@@ -6,17 +6,17 @@ from src.external_api import convert_to_rubles
 
 @pytest.fixture
 def usd_transaction():
-    return {"operationAmount": {"amount": 100.0, "currency": {"code": "USD"}}}
+    return {"operationAmount": {"amount": "100.0", "currency": {"code": "USD"}}}
 
 
 @pytest.fixture
 def eur_transaction():
-    return {"operationAmount": {"amount": 50.0, "currency": {"code": "EUR"}}}
+    return {"operationAmount": {"amount": "50.0", "currency": {"code": "EUR"}}}
 
 
 @pytest.fixture
 def rub_transaction():
-    return {"operationAmount": {"amount": 200.0, "currency": {"code": "RUB"}}}
+    return {"operationAmount": {"amount": "200.0", "currency": {"code": "RUB"}}}
 
 
 @patch("src.external_api.requests.get")
@@ -45,6 +45,6 @@ def test_convert_to_rubles_rub(rub_transaction):
 
 
 def test_convert_to_rubles_other_currency(rub_transaction):
-    transaction = {"operationAmount": {"amount": 300.0, "currency": {"code": "JPY"}}}
+    transaction = {"operationAmount": {"amount": "300.0", "currency": {"code": "JPY"}}}
     result = convert_to_rubles(transaction)
     assert result == 300.0

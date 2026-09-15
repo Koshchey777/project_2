@@ -51,7 +51,7 @@ class TestReaderCSV(unittest.TestCase):
 
     @patch("builtins.open", new_callable=mock_open, read_data="")
     def test_empty_file(self, mock_file):
-        """Пустой файл (только заголовки или вообще пусто) — без ошибок"""
+        """Пустой файл"""
         result = reader_csv("empty.csv")
         self.assertEqual(result, [])
 

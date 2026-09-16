@@ -12,4 +12,4 @@ def reader_csv(file_path):
 def reader_xlsx(file_path):
     """Чтение файлов формата excel"""
     df = pd.read_excel(file_path, engine="openpyxl")
-    return df
+    return df.to_dict(orient='records')

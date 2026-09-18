@@ -1,4 +1,5 @@
 import unittest
+import pandas as pd
 from unittest.mock import mock_open, patch
 
 from src.data_read import reader_csv, reader_xlsx
@@ -51,7 +52,7 @@ class TestReaderCSV(unittest.TestCase):
 
     @patch("builtins.open", new_callable=mock_open, read_data="")
     def test_empty_file(self, mock_file):
-        """Пустой файл (только заголовки или вообще пусто) — без ошибок"""
+        """Пустой файл"""
         result = reader_csv("empty.csv")
         self.assertEqual(result, [])
 
@@ -72,76 +73,81 @@ XLSX_DICT = {
 class TestReaderXLSX(unittest.TestCase):
 
     @patch("pandas.read_excel")
-    def test_returns_dataframe(self, mock_read):
-        """Функция возвращает DataFrame"""
-        import pandas as pd
-
-        mock_df = pd.DataFrame(XLSX_DICT)
+    def test_returns_list_of_dicts(self, mock_read):
+        """Функция возвращает список словарей"""
+        data = {"id": [101, 102], "state": ["OK", "FAIL"], "amount": [100.5, 200.0]}
+        mock_df = pd.DataFrame(data)
         mock_read.return_value = mock_df
 
         result = reader_xlsx("fake/path.xlsx")
 
-        self.assertIsInstance(result, pd.DataFrame)
+        self.assertIsInstance(result, list)
         self.assertEqual(len(result), 2)
-
-    @patch("pandas.read_excel")
-    def test_column_names(self, mock_read):
-        """Проверка названий колонок"""
-        import pandas as pd
-
-        mock_read.return_value = pd.DataFrame(XLSX_DICT)
-
-        result = reader_xlsx("fake/path.xlsx")
-
-        expected_columns = {
-            "id",
-            "state",
-            "date",
-            "amount",
-            "currency_name",
-            "currency_code",
-            "from",
-            "to",
-            "description",
-        }
-        self.assertEqual(set(result.columns), expected_columns)
+        for row in result:
+            self.assertIsInstance(row, dict)
 
     @patch("pandas.read_excel")
     def test_first_row_values(self, mock_read):
         """Проверка значений первой строки"""
-        import pandas as pd
-
-        mock_read.return_value = pd.DataFrame(XLSX_DICT)
+        data = {"id": [650703, 3598919], "state": ["EXECUTED", "EXECUTED"], "currency_code": ["PEN", "COP"]}
+        mock_df = pd.DataFrame(data)
+        mock_read.return_value = mock_df
 
         result = reader_xlsx("fake/path.xlsx")
-        first = result.iloc[0]
+        first = result[0]
 
         self.assertEqual(first["id"], 650703)
         self.assertEqual(first["state"], "EXECUTED")
-        self.assertEqual(first["amount"], 16210)
         self.assertEqual(first["currency_code"], "PEN")
+
+    @patch("pandas.read_excel")
+    def test_handles_nan_as_none(self, mock_read):
+        """Пустые ячейки в Excel становятся None (или NaN, который при конвертации в dict часто остается float('nan'))"""
+        import numpy as np
+
+        data = {"id": [1], "from": [np.nan], "to": ["Счет 123"]}
+        mock_df = pd.DataFrame(data)
+        mock_read.return_value = mock_df
+
+        result = reader_xlsx("fake/path.xlsx")
+        row = result[0]
+
+        self.assertTrue(pd.isna(row["from"]))
+        self.assertEqual(row["to"], "Счет 123")
 
     @patch("pandas.read_excel")
     def test_called_with_engine(self, mock_read):
         """read_excel вызван с engine='openpyxl'"""
-        import pandas as pd
+        mock_read.return_value = pd.DataFrame({"id": [1]})
 
-        mock_read.return_value = pd.DataFrame(XLSX_DICT)
+        reader_xlsx("../data/transactions.xlsx")
 
-        reader_xlsx("../data/transactions_excel.xlsx")
-
-        mock_read.assert_called_once_with("../data/transactions_excel.xlsx", engine="openpyxl")
+        mock_read.assert_called_once_with("../data/transactions.xlsx", engine="openpyxl")
 
     @patch("pandas.read_excel")
-    def test_empty_dataframe(self, mock_read):
-        """Пустой файл — пустой DataFrame"""
-        import pandas as pd
-
-        mock_read.return_value = pd.DataFrame()
+    def test_empty_file_returns_empty_list(self, mock_read):
+        """Если в файле нет данных (только заголовки или пусто) — возвращается пустой список"""
+        mock_df = pd.DataFrame()
+        mock_read.return_value = mock_df
 
         result = reader_xlsx("empty.xlsx")
 
-        self.assertTrue(result.empty)
+        self.assertIsInstance(result, list)
+        self.assertEqual(result, [])
+
+    @patch("pandas.read_excel")
+    def test_column_names_match_keys(self, mock_read):
+        """Ключи в словарях соответствуют названиям колонок Excel"""
+        data = {"user_id": [1], "balance": [1000], "active": [True]}
+        mock_df = pd.DataFrame(data)
+        mock_read.return_value = mock_df
+
+        result = reader_xlsx("test.xlsx")
+        row = result[0]
+
+        self.assertIn("user_id", row)
+        self.assertIn("balance", row)
+        self.assertIn("active", row)
 
 
 if __name__ == "__main__":

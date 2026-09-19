@@ -1,4 +1,5 @@
 from unittest.mock import Mock, patch
+
 import pytest
 
 from src.external_api import convert_to_rubles

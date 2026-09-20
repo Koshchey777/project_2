@@ -1,6 +1,7 @@
 import unittest
-import pandas as pd
 from unittest.mock import mock_open, patch
+
+import pandas as pd
 
 from src.data_read import reader_csv, reader_xlsx
 

@@ -1,4 +1,5 @@
 from csv import DictReader
+
 import pandas as pd
 
 
@@ -12,4 +13,4 @@ def reader_csv(file_path):
 def reader_xlsx(file_path):
     """Чтение файлов формата excel"""
     df = pd.read_excel(file_path, engine="openpyxl")
-    return df.to_dict(orient='records')
+    return df.to_dict(orient="records")
